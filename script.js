@@ -1,670 +1,767 @@
 
 /* ==========================================
-   SKYCAST PRO
-   REAL WEATHER USING OPEN-METEO
-   NO API KEY REQUIRED
+   SHOPSPHERE
+   E-COMMERCE SHOPPING APPLICATION
 ========================================== */
 
-// 1. API URLS
+// 1. API CONFIGURATION
 
-const GEO_URL = "https://geocoding-api.open-meteo.com/v1/search";
-const WEATHER_URL = "https://api.open-meteo.com/v1/forecast";
-
-
-// 2. HTML ELEMENTS
-
-const searchForm = document.getElementById("search-form");
-const cityInput = document.getElementById("city-input");
-const searchButton = document.getElementById("search-btn");
-
-const dashboard = document.getElementById("weather-dashboard");
-const emptyState = document.getElementById("empty-state");
-
-const loading = document.getElementById("loading");
-const errorBox = document.getElementById("error-box");
-const errorText = document.getElementById("error-text");
-
-const locationButton = document.getElementById("location-btn");
-const refreshButton = document.getElementById("refresh-btn");
-
-let lastLocation = null;
+const API_URL = "https://fakestoreapi.com/products";
 
 
-// 3. SYSTEM CLOCK
+// 2. APPLICATION STATE
 
-function updateClock() {
+let products = [];
 
-    const now = new Date();
+let cart = loadCart();
 
-    document.getElementById("clock").textContent =
-        now.toLocaleTimeString("en-IN");
+let activeCategory = "all";
 
-    document.getElementById("today-date").textContent =
-        now.toLocaleDateString("en-IN", {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-            year: "numeric"
-        });
+let searchQuery = "";
 
-}
-
-updateClock();
-setInterval(updateClock, 1000);
+let sortType = "default";
 
 
-// 4. FOOTER YEAR
+// 3. HTML ELEMENTS
 
-document.getElementById("year").textContent =
-    new Date().getFullYear();
+const productGrid = document.getElementById("product-grid");
+
+const loader = document.getElementById("loader");
+
+const errorMessage = document.getElementById("error-message");
+
+const productCount = document.getElementById("product-count");
+
+const searchInput = document.getElementById("search-input");
+
+const sortSelect = document.getElementById("sort-products");
+
+const cartDrawer = document.getElementById("cart-drawer");
+
+const cartOverlay = document.getElementById("cart-overlay");
+
+const cartItems = document.getElementById("cart-items");
+
+const cartCount = document.getElementById("cart-count");
+
+const checkoutButton = document.getElementById("checkout-btn");
 
 
-// 5. WEATHER CODE CONVERSION
+// 4. CURRENCY FORMAT
 
-function getWeatherInfo(code, isDay = 1) {
+function formatPrice(price) {
 
-    const conditions = {
-
-        0: ["Clear sky", isDay ? "01d" : "01n", "☀️"],
-        1: ["Mainly clear", isDay ? "01d" : "01n", "🌤️"],
-        2: ["Partly cloudy", isDay ? "02d" : "02n", "⛅"],
-        3: ["Overcast", isDay ? "04d" : "04n", "☁️"],
-
-        45: ["Fog", "50d", "🌫️"],
-        48: ["Depositing rime fog", "50d", "🌫️"],
-
-        51: ["Light drizzle", "09d", "🌦️"],
-        53: ["Moderate drizzle", "09d", "🌦️"],
-        55: ["Dense drizzle", "09d", "🌧️"],
-
-        56: ["Freezing drizzle", "09d", "🌧️"],
-        57: ["Heavy freezing drizzle", "09d", "🌧️"],
-
-        61: ["Slight rain", "10d", "🌧️"],
-        63: ["Moderate rain", "10d", "🌧️"],
-        65: ["Heavy rain", "10d", "🌧️"],
-
-        66: ["Freezing rain", "13d", "🌨️"],
-        67: ["Heavy freezing rain", "13d", "🌨️"],
-
-        71: ["Slight snowfall", "13d", "🌨️"],
-        73: ["Moderate snowfall", "13d", "❄️"],
-        75: ["Heavy snowfall", "13d", "❄️"],
-        77: ["Snow grains", "13d", "❄️"],
-
-        80: ["Rain showers", "09d", "🌦️"],
-        81: ["Moderate rain showers", "09d", "🌧️"],
-        82: ["Violent rain showers", "09d", "⛈️"],
-
-        85: ["Snow showers", "13d", "🌨️"],
-        86: ["Heavy snow showers", "13d", "❄️"],
-
-        95: ["Thunderstorm", "11d", "⛈️"],
-        96: ["Thunderstorm with hail", "11d", "⛈️"],
-        99: ["Heavy thunderstorm", "11d", "⛈️"]
-
-    };
-
-    return conditions[code] ||
-        ["Unknown weather", "03d", "🌤️"];
+    return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD"
+    }).format(price);
 
 }
 
 
-// 6. SEARCH CITY
+// 5. LOAD CART FROM LOCAL STORAGE
 
-searchForm.addEventListener("submit", async function(event) {
-
-    event.preventDefault();
-
-    const city = cityInput.value.trim();
-
-    if (!city) {
-        showError("Please enter a city name.");
-        return;
-    }
-
-    await searchCity(city);
-
-});
-
-
-// 7. GEOCODING API
-
-async function searchCity(city) {
-
-    showLoading(true);
+function loadCart() {
 
     try {
 
-        const url =
-            `${GEO_URL}?name=${encodeURIComponent(city)}&count=1&language=en&format=json`;
+        const savedCart = JSON.parse(
+            localStorage.getItem("shopsphere-cart")
+        );
 
-        const response = await fetch(url);
+        if (!Array.isArray(savedCart)) return [];
+
+        return savedCart.filter(item =>
+            Number.isInteger(item.id) &&
+            Number.isInteger(item.quantity) &&
+            item.quantity > 0 &&
+            Number.isFinite(item.price) &&
+            item.price >= 0 &&
+            typeof item.title === "string" &&
+            typeof item.image === "string"
+        );
+
+    }
+
+    catch (error) {
+
+        console.error("Unable to load saved cart:", error);
+
+        return [];
+
+    }
+
+}
+
+
+// 6. SAVE CART
+
+function saveCart() {
+
+    localStorage.setItem(
+        "shopsphere-cart",
+        JSON.stringify(cart)
+    );
+
+}
+
+
+// 7. FETCH PRODUCTS FROM API
+
+async function fetchProducts() {
+
+    loader.hidden = false;
+
+    errorMessage.hidden = true;
+
+    productGrid.innerHTML = "";
+
+    try {
+
+        const response = await fetch(API_URL);
 
         if (!response.ok) {
-            throw new Error("Unable to connect to location service.");
+            throw new Error("Product API request failed.");
         }
 
         const data = await response.json();
 
-        if (!data.results || data.results.length === 0) {
-            throw new Error("City not found. Try another city name.");
+        if (!Array.isArray(data)) {
+            throw new Error("Invalid product data.");
         }
 
-        const place = data.results[0];
+        products = data;
 
-        const location = {
-            name: place.name,
-            country: place.country || "",
-            latitude: place.latitude,
-            longitude: place.longitude
-        };
+        loader.hidden = true;
+        const addButton = document.createElement("button");
 
-        await loadWeather(location);
+        addButton.className = "add-cart";
 
-    }
+        addButton.innerHTML = "🛒 Add to Cart";
 
-    catch(error) {
-
-        showError(error.message);
-
-    }
-
-    finally {
-
-        showLoading(false);
-
-    }
-
-}
-
-
-// 8. FETCH REAL WEATHER
-
-async function loadWeather(location) {
-
-    const params = new URLSearchParams({
-
-        latitude: location.latitude,
-        longitude: location.longitude,
-
-        current: [
-            "temperature_2m",
-            "relative_humidity_2m",
-            "apparent_temperature",
-            "is_day",
-            "weather_code",
-            "wind_speed_10m",
-            "wind_direction_10m",
-            "surface_pressure",
-            "visibility"
-        ].join(","),
-
-        daily: [
-            "weather_code",
-            "temperature_2m_max",
-            "temperature_2m_min",
-            "sunrise",
-            "sunset"
-        ].join(","),
-
-        forecast_days: "5",
-        timezone: "auto",
-        wind_speed_unit: "ms"
-
-    });
-
-    const response = await fetch(
-        `${WEATHER_URL}?${params.toString()}`
-    );
-
-    if (!response.ok) {
-        throw new Error("Weather service is temporarily unavailable.");
-    }
-
-    const data = await response.json();
-
-    if (!data.current || !data.daily) {
-        throw new Error("Weather information is unavailable for this location.");
-    }
-
-    lastLocation = location;
-
-    displayCurrentWeather(data, location);
-
-    displayForecast(data);
-
-    updateWeatherArt(
-        data.current.weather_code,
-        data.current.is_day
-    );
-
-    dashboard.hidden = false;
-    emptyState.hidden = true;
-    errorBox.hidden = true;
-
-    document.getElementById("update-time").textContent =
-        "Last synchronized: " +
-        new Date().toLocaleTimeString();
-
-}
-
-
-// 9. DISPLAY CURRENT WEATHER
-
-function displayCurrentWeather(data, location) {
-
-    const current = data.current;
-
-    const temp = Math.round(current.temperature_2m);
-
-    const feels = Math.round(current.apparent_temperature);
-
-    const weather = getWeatherInfo(
-        current.weather_code,
-        current.is_day
-    );
-
-    // Location
-
-    document.getElementById("city-name").textContent =
-        `${location.name}, ${location.country}`;
-
-    document.getElementById("weather-country").textContent =
-        `${location.name} • ${location.country}`;
-
-    // Date
-
-    const today = data.daily.time[0];
-
-    const date = new Date(today + "T12:00:00");
-
-    document.getElementById("weather-date").textContent =
-        date.toLocaleDateString("en-IN", {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-            year: "numeric"
+        addButton.addEventListener("click", function () {
+            addToCart(product.id);
         });
 
-    // Temperature
+        renderProducts();
 
-    document.getElementById("temperature").textContent =
-        `${temp}°`;
+        updateCart();
 
-    document.getElementById("feels-like").textContent =
-        `${feels}°C`;
+    }
 
-    // Weather description
+    catch (error) {
 
-    document.getElementById("weather-description").textContent =
-        weather[0];
+        console.error(error);
 
-    document.getElementById("condition-title").textContent =
-        weather[0];
+        loader.hidden = true;
 
-    // Weather icon
+        errorMessage.hidden = false;
 
-    const weatherIcon = document.getElementById("weather-icon");
+        productCount.textContent = "Products unavailable";
 
-    weatherIcon.src =
-        `https://openweathermap.org/img/wn/${weather[1]}@2x.png`;
-
-    weatherIcon.alt = weather[0];
-
-    weatherIcon.style.display = "block";
-
-    // Humidity
-
-    document.getElementById("humidity").textContent =
-        `${current.relative_humidity_2m}%`;
-
-    // Wind speed
-
-    document.getElementById("wind").textContent =
-        `${current.wind_speed_10m} m/s`;
-
-    // Visibility
-
-    document.getElementById("visibility").textContent =
-        `${(current.visibility / 1000).toFixed(1)} km`;
-
-    // Pressure
-
-    document.getElementById("pressure").textContent =
-        `${Math.round(current.surface_pressure)} hPa`;
-
-    // Sunrise and sunset
-
-    document.getElementById("sunrise").textContent =
-        formatTime(data.daily.sunrise[0]);
-
-    document.getElementById("sunset").textContent =
-        formatTime(data.daily.sunset[0]);
+    }
 
 }
 
 
-// 10. FORMAT TIME
+// 8. RENDER PRODUCTS
 
-function formatTime(dateTime) {
+function renderProducts() {
 
-    if (!dateTime) return "--:--";
+    productGrid.innerHTML = "";
 
-    return dateTime.split("T")[1].slice(0, 5);
+    let filteredProducts = [...products];
 
-}
+    // Category filter
 
+    if (activeCategory !== "all") {
 
-// 11. FIVE-DAY FORECAST
-
-function displayForecast(data) {
-
-    const grid = document.getElementById("forecast-grid");
-
-    grid.innerHTML = "";
-
-    const daily = data.daily;
-
-    daily.time.forEach((dateString, index) => {
-
-        const date = new Date(dateString + "T12:00:00");
-
-        const dayName = index === 0
-            ? "Today"
-            : date.toLocaleDateString("en-IN", {
-                weekday: "short"
-            });
-
-        const weather = getWeatherInfo(
-            daily.weather_code[index]
+        filteredProducts = filteredProducts.filter(product =>
+            product.category.toLowerCase() ===
+            activeCategory.toLowerCase()
         );
 
-        const maxTemp = Math.round(
-            daily.temperature_2m_max[index]
+    }
+
+    // Search filter
+
+    if (searchQuery) {
+
+        filteredProducts = filteredProducts.filter(product =>
+
+            product.title.toLowerCase().includes(searchQuery) ||
+
+            product.category.toLowerCase().includes(searchQuery) ||
+
+            product.description.toLowerCase().includes(searchQuery)
+
         );
 
-        const minTemp = Math.round(
-            daily.temperature_2m_min[index]
+    }
+
+    // Sorting
+
+    if (sortType === "low") {
+
+        filteredProducts.sort((a, b) => a.price - b.price);
+
+    }
+
+    else if (sortType === "high") {
+
+        filteredProducts.sort((a, b) => b.price - a.price);
+
+    }
+
+    else if (sortType === "rating") {
+
+        filteredProducts.sort(
+            (a, b) => b.rating.rate - a.rating.rate
         );
 
-        // Forecast card
+    }
 
-        const card = document.createElement("div");
+    // Update count
 
-        card.className = "forecast-card";
+    productCount.textContent =
+        `Showing ${filteredProducts.length} products`;
 
-        const heading = document.createElement("h3");
+    // Empty results
 
-        heading.textContent = dayName;
+    if (filteredProducts.length === 0) {
+
+        const empty = document.createElement("div");
+
+        empty.className = "no-products";
+
+        empty.textContent =
+            "No products found. Try another search.";
+
+        productGrid.appendChild(empty);
+
+        return;
+
+    }
+
+    // Create product cards
+
+    filteredProducts.forEach(product => {
+
+        const card = document.createElement("article");
+
+        card.className = "product-card";
+
+        // Image container
+
+        const imageContainer = document.createElement("div");
+
+        imageContainer.className = "product-image";
 
         const image = document.createElement("img");
 
-        image.src =
-            `https://openweathermap.org/img/wn/${weather[1]}@2x.png`;
+        image.src = product.image;
 
-        image.alt = weather[0];
+        image.alt = product.title;
 
-        const description = document.createElement("p");
+        image.loading = "lazy";
 
-        description.textContent = weather[0];
+        image.onerror = function () {
+            this.style.display = "none";
+        };
 
-        const temperature = document.createElement("div");
+        const badge = document.createElement("span");
 
-        temperature.className = "forecast-temp";
+        badge.className = "product-badge";
 
-        const high = document.createElement("strong");
+        badge.textContent = "POPULAR";
 
-        high.textContent = `${maxTemp}°`;
+        imageContainer.append(image, badge);
 
-        const low = document.createElement("span");
+        // Product information
 
-        low.textContent = `${minTemp}°`;
+        const info = document.createElement("div");
 
-        temperature.append(high, low);
+        info.className = "product-info";
 
-        card.append(
-            heading,
-            image,
-            description,
-            temperature
-        );
+        const category = document.createElement("span");
 
-        grid.appendChild(card);
+        category.className = "product-category";
+
+        category.textContent = product.category;
+
+        const title = document.createElement("h3");
+
+        title.textContent = product.title;
+
+        const rating = document.createElement("div");
+
+        rating.className = "product-rating";
+
+        const stars = Number(product.rating.rate);
+
+        rating.textContent =
+            `★ ${stars.toFixed(1)} | ${product.rating.count} reviews`;
+
+        const bottom = document.createElement("div");
+
+        bottom.className = "product-bottom";
+
+        const price = document.createElement("strong");
+
+        price.className = "product-price";
+
+        price.textContent = formatPrice(product.price);
+
+        const addButton = document.createElement("button");
+
+        addButton.className = "add-cart";
+
+        addButton.textContent = "+ Add";
+
+        addButton.addEventListener("click", function () {
+
+            addToCart(product.id);
+
+        });
+
+        bottom.append(price, addButton);
+
+        info.append(category, title, rating, bottom);
+
+        card.append(imageContainer, info);
+
+        productGrid.appendChild(card);
 
     });
 
 }
 
 
-// 12. DYNAMIC WEATHER ART
+// 9. CATEGORY FILTERS
 
-function updateWeatherArt(code, isDay) {
+document.querySelectorAll(".filter-btn").forEach(button => {
 
-    const weather = getWeatherInfo(code, isDay);
+    button.addEventListener("click", function () {
 
-    const artSun = document.querySelector(".art-sun");
+        document.querySelectorAll(".filter-btn").forEach(btn => {
 
-    const artCloud = document.querySelector(".art-cloud");
+            btn.classList.remove("active");
 
-    const glow = document.querySelector(".art-glow");
+        });
 
-    const rainy = [51,53,55,56,57,61,63,65,66,67,80,81,82,95,96,99];
+        this.classList.add("active");
 
-    const snowy = [71,73,75,77,85,86];
+        activeCategory = this.dataset.category;
 
-    if (!isDay) {
+        renderProducts();
 
-        artSun.textContent = "☾";
-        artSun.style.color = "#c3d4ff";
-        artSun.style.display = "block";
+    });
 
-        artCloud.textContent = "☁";
+});
 
-    }
 
-    else if (rainy.includes(code)) {
+// 10. PRODUCT SEARCH
 
-        artSun.style.display = "none";
+searchInput.addEventListener("input", function () {
 
-        artCloud.textContent = "🌧️";
+    searchQuery = this.value.toLowerCase().trim();
 
-    }
+    renderProducts();
 
-    else if (snowy.includes(code)) {
+});
 
-        artSun.style.display = "none";
 
-        artCloud.textContent = "❄️";
+// 11. PRODUCT SORTING
 
-    }
+sortSelect.addEventListener("change", function () {
 
-    else if (code === 0 || code === 1) {
+    sortType = this.value;
 
-        artSun.style.display = "block";
-        artSun.textContent = "☀";
-        artSun.style.color = "#ffcc69";
+    renderProducts();
 
-        artCloud.textContent = "☁";
+});
+
+
+// 12. ADD TO CART
+
+function addToCart(productId) {
+
+    const product = products.find(item =>
+        item.id === productId
+    );
+
+    if (!product) return;
+
+    const existingItem = cart.find(item =>
+        item.id === productId
+    );
+
+    if (existingItem) {
+
+        existingItem.quantity++;
 
     }
 
     else {
 
-        artSun.style.display = "none";
+        cart.push({
 
-        artCloud.textContent = "☁";
+            id: product.id,
 
-    }
+            title: product.title,
 
-    glow.style.background =
-        "radial-gradient(circle, rgba(69,217,245,.24), transparent 70%)";
+            price: product.price,
 
-}
+            image: product.image,
 
+            quantity: 1
 
-// 13. LOADING
-
-function showLoading(active) {
-
-    loading.hidden = !active;
-
-    searchButton.disabled = active;
-
-    locationButton.disabled = active;
-
-    searchButton.innerHTML = active
-        ? "Loading..."
-        : 'Explore Weather <span>→</span>';
-
-    if (active) {
-
-        errorBox.hidden = true;
-        dashboard.hidden = true;
-        emptyState.hidden = true;
+        });
 
     }
 
-}
+    saveCart();
 
+    updateCart();
 
-// 14. ERROR HANDLING
-
-function showError(message) {
-
-    errorText.textContent = message;
-
-    errorBox.hidden = false;
-
-    dashboard.hidden = true;
-
-    emptyState.hidden = true;
+    openCart();
 
 }
 
 
-// 15. POPULAR CITY BUTTONS
+// 13. CHANGE QUANTITY
 
-document.querySelectorAll(".city-chip").forEach(button => {
+function changeQuantity(productId, change) {
 
-    button.addEventListener("click", function() {
+    const item = cart.find(item =>
+        item.id === productId
+    );
 
-        const city = this.dataset.city;
+    if (!item) return;
 
-        cityInput.value = city;
+    item.quantity += change;
 
-        searchCity(city);
+    if (item.quantity <= 0) {
 
-    });
-
-});
-
-
-// 16. CURRENT LOCATION
-
-locationButton.addEventListener("click", function() {
-
-    if (!navigator.geolocation) {
-
-        showError("Geolocation is not supported by your browser.");
+        removeFromCart(productId);
 
         return;
 
     }
 
-    showLoading(true);
+    saveCart();
 
-    navigator.geolocation.getCurrentPosition(
+    updateCart();
 
-        async function(position) {
+}
 
-            try {
 
-                const location = {
-                    name: "Your Location",
-                    country: "",
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude
-                };
+// 14. REMOVE PRODUCT
 
-                await loadWeather(location);
+function removeFromCart(productId) {
 
-            }
-
-            catch(error) {
-
-                showError(error.message);
-
-            }
-
-            finally {
-
-                showLoading(false);
-
-            }
-
-        },
-
-        function(error) {
-
-            showLoading(false);
-
-            const messages = {
-                1: "Location permission denied. Please allow location access.",
-                2: "Unable to detect your location.",
-                3: "Location request timed out. Try again."
-            };
-
-            showError(
-                messages[error.code] || "Location unavailable."
-            );
-
-        },
-
-        {
-            enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 300000
-        }
-
+    cart = cart.filter(item =>
+        item.id !== productId
     );
 
+    saveCart();
+
+    updateCart();
+
+}
+
+
+// 15. UPDATE CART
+
+function updateCart() {
+
+    cartItems.innerHTML = "";
+
+    // Total quantity
+
+    const totalItems = cart.reduce(
+        (sum, item) => sum + item.quantity,
+        0
+    );
+
+    cartCount.textContent = totalItems;
+
+    document.getElementById("cart-items-label").textContent =
+        `${totalItems} items`;
+
+    // Empty cart
+
+    if (cart.length === 0) {
+
+        const empty = document.createElement("div");
+
+        empty.className = "empty-cart";
+
+        const icon = document.createElement("span");
+
+        icon.textContent = "🛒";
+
+        const heading = document.createElement("h3");
+
+        heading.textContent = "Your cart is empty";
+
+        const paragraph = document.createElement("p");
+
+        paragraph.textContent =
+            "Add some products to get started.";
+
+        empty.append(icon, heading, paragraph);
+
+        cartItems.appendChild(empty);
+
+    }
+
+    // Cart products
+
+    cart.forEach(item => {
+
+        const row = document.createElement("div");
+
+        row.className = "cart-item";
+
+        const image = document.createElement("img");
+
+        image.src = item.image;
+
+        image.alt = item.title;
+
+        const info = document.createElement("div");
+
+        info.className = "cart-item-info";
+
+        const title = document.createElement("h4");
+
+        title.textContent = item.title;
+
+        const price = document.createElement("strong");
+
+        price.textContent =
+            formatPrice(item.price * item.quantity);
+
+        // Quantity controls
+
+        const controls = document.createElement("div");
+
+        controls.className = "quantity-controls";
+
+        const minus = document.createElement("button");
+
+        minus.textContent = "−";
+
+        minus.setAttribute("aria-label", "Decrease quantity");
+
+        minus.addEventListener("click", () => {
+            changeQuantity(item.id, -1);
+        });
+
+        const quantity = document.createElement("span");
+
+        quantity.textContent = item.quantity;
+
+        const plus = document.createElement("button");
+
+        plus.textContent = "+";
+
+        plus.setAttribute("aria-label", "Increase quantity");
+
+        plus.addEventListener("click", () => {
+            changeQuantity(item.id, 1);
+        });
+
+        controls.append(minus, quantity, plus);
+
+        const remove = document.createElement("button");
+
+        remove.className = "remove-item";
+
+        remove.textContent = "Remove";
+
+        remove.addEventListener("click", () => {
+            removeFromCart(item.id);
+        });
+
+        info.append(title, price, controls, remove);
+
+        row.append(image, info);
+
+        cartItems.appendChild(row);
+
+    });
+
+    // Calculate bill
+
+    calculateTotal();
+
+}
+
+
+// 16. CALCULATE SUBTOTAL, TAX AND SHIPPING
+
+function calculateTotal() {
+
+    const subtotal = cart.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0
+    );
+
+    const tax = subtotal * 0.05;
+
+    const shipping = subtotal === 0 || subtotal >= 100
+        ? 0
+        : 5;
+
+    const total = subtotal + tax + shipping;
+
+    document.getElementById("subtotal").textContent =
+        formatPrice(subtotal);
+
+    document.getElementById("tax").textContent =
+        formatPrice(tax);
+
+    document.getElementById("shipping").textContent =
+        shipping === 0 && subtotal > 0
+            ? "FREE"
+            : formatPrice(shipping);
+
+    document.getElementById("total").textContent =
+        formatPrice(total);
+
+    checkoutButton.disabled = cart.length === 0;
+
+    checkoutButton.textContent = cart.length === 0
+        ? "Your Cart Is Empty"
+        : "Proceed to Checkout →";
+
+}
+
+
+// 17. OPEN CART
+
+function openCart() {
+
+    cartDrawer.classList.add("open");
+
+    cartOverlay.classList.add("open");
+
+    document.body.style.overflow = "hidden";
+
+}
+
+
+// 18. CLOSE CART
+
+function closeCart() {
+
+    cartDrawer.classList.remove("open");
+
+    cartOverlay.classList.remove("open");
+
+    document.body.style.overflow = "";
+
+}
+
+
+// Cart button
+
+document.getElementById("open-cart")
+    .addEventListener("click", openCart);
+
+
+// Close button
+
+document.getElementById("close-cart")
+    .addEventListener("click", closeCart);
+
+
+// Overlay click
+
+cartOverlay.addEventListener("click", closeCart);
+
+
+// 19. CHECKOUT
+
+checkoutButton.addEventListener("click", function () {
+
+    if (cart.length === 0) return;
+
+    const totalText =
+        document.getElementById("total").textContent;
+
+    const orderNumber =
+        "SS-" + Date.now().toString().slice(-8);
+
+    document.getElementById("order-id").textContent =
+        orderNumber;
+
+    document.getElementById("order-total").textContent =
+        totalText;
+
+    // Clear cart
+
+    cart = [];
+
+    saveCart();
+
+    updateCart();
+
+    closeCart();
+
+    // Show confirmation
+
+    document.getElementById("checkout-modal")
+        .classList.add("show");
+
 });
 
 
-// 17. REFRESH WEATHER
+// 20. CLOSE CHECKOUT MODAL
 
-refreshButton.addEventListener("click", async function() {
+function closeModal() {
 
-    if (!lastLocation) return;
+    document.getElementById("checkout-modal")
+        .classList.remove("show");
 
-    showLoading(true);
+}
 
-    try {
-
-        await loadWeather(lastLocation);
-
-    }
-
-    catch(error) {
-
-        showError(error.message);
-
-    }
-
-    finally {
-
-        showLoading(false);
-
-    }
-
-});
+document.getElementById("close-modal")
+    .addEventListener("click", closeModal);
 
 
-// 18. INITIAL SCREEN
+document.getElementById("continue-shopping")
+    .addEventListener("click", closeModal);
 
-dashboard.hidden = true;
-errorBox.hidden = true;
-loading.hidden = true;
-emptyState.hidden = false;
+
+// Close modal when clicking outside
+
+document.getElementById("checkout-modal")
+    .addEventListener("click", function (event) {
+
+        if (event.target === this) {
+            closeModal();
+        }
+
+    });
+
+
+// 21. RETRY API
+
+document.getElementById("retry-btn")
+    .addEventListener("click", fetchProducts);
+
+
+// 22. FOOTER YEAR
+
+document.getElementById("year").textContent =
+    new Date().getFullYear();
+
+
+// 23. INITIALIZE APPLICATION
+
+updateCart();
+
+fetchProducts();

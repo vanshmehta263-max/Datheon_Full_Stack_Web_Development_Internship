@@ -5,294 +5,383 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>SkyCast Pro | Weather Intelligence</title>
+    <title>ShopSphere | Online Shopping</title>
 
     <link rel="stylesheet" href="style.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 
 <body>
 
-    <div class="ambient ambient-one"></div>
-    <div class="ambient ambient-two"></div>
+<!-- NAVBAR -->
 
-    <!-- NAVBAR -->
-    <header class="navbar">
-        <a href="#" class="logo">
-            <span class="logo-icon">☁</span>
-            SkyCast<span>Pro</span>
+<header class="navbar">
+
+    <a href="#" class="logo">
+        <span class="logo-icon">S</span>
+        ShopSphere<span class="logo-dot">.</span>
+    </a>
+
+    <nav class="nav-links">
+        <a href="#home">Home</a>
+        <a href="#products">Products</a>
+        <a href="#features">Why Us</a>
+    </nav>
+
+    <div class="nav-actions">
+
+        <button class="cart-button" id="open-cart">
+            🛒 Cart
+            <span id="cart-count">0</span>
+        </button>
+
+    </div>
+
+</header>
+
+
+<!-- HERO SECTION -->
+
+<section class="hero" id="home">
+
+    <div class="hero-content">
+
+        <span class="hero-tag">✦ THE SMART WAY TO SHOP</span>
+
+        <h1>
+            Discover products.
+            <span>Love every purchase.</span>
+        </h1>
+
+        <p>
+            Explore quality products across electronics,
+            fashion and accessories. Everything you need,
+            all in one place.
+        </p>
+
+        <a href="#products" class="hero-btn">
+            Explore Collection →
         </a>
 
-        <div class="nav-right">
-            <span class="live-status">
-                <span class="live-dot"></span>
-                LIVE SYSTEM
-            </span>
+        <div class="hero-stats">
 
-            <button class="location-button" id="location-btn">
-                ◎ My Location
-            </button>
-        </div>
-    </header>
-
-    <main class="main-container">
-
-        <!-- INTRO -->
-        <section class="intro">
             <div>
-                <p class="section-label">WEATHER INTELLIGENCE PLATFORM</p>
-                <h1>Weather beyond <span>expectations.</span></h1>
-                <p class="intro-description">
-                    Real-time climate insights, atmospheric conditions
-                    and global weather forecasts.
-                </p>
+                <strong>20+</strong>
+                <small>Products</small>
             </div>
 
-            <div class="system-time">
-                <span>LOCAL SYSTEM TIME</span>
-                <h2 id="clock">--:--:--</h2>
-                <p id="today-date">Loading date...</p>
-            </div>
-        </section>
-
-        <!-- SEARCH -->
-        <section class="search-area">
-
-            <form id="search-form" class="search-box">
-
-                <span class="search-symbol">⌕</span>
-
-                <input
-                    type="text"
-                    id="city-input"
-                    placeholder="Search city, country..."
-                    autocomplete="off"
-                    required
-                >
-
-                <button type="submit" id="search-btn">
-                    Explore Weather
-                    <span>→</span>
-                </button>
-
-            </form>
-
-            <div class="quick-cities">
-                <span>POPULAR:</span>
-                <button class="city-chip" data-city="Delhi">Delhi</button>
-                <button class="city-chip" data-city="Mumbai">Mumbai</button>
-                <button class="city-chip" data-city="London">London</button>
-                <button class="city-chip" data-city="Dubai">Dubai</button>
+            <div>
+                <strong>4.5★</strong>
+                <small>Average Rating</small>
             </div>
 
-        </section>
-
-        <!-- LOADING -->
-        <div id="loading" class="loading" hidden>
-            <div class="loader"></div>
-            <p>Connecting to weather satellites...</p>
-        </div>
-
-        <!-- ERROR -->
-        <div id="error-box" class="error-box" hidden>
-            <span>⚠</span>
-            <p id="error-text">Unable to fetch weather.</p>
-        </div>
-
-        <!-- WEATHER DASHBOARD -->
-        <div id="weather-dashboard" hidden>
-
-            <!-- MAIN WEATHER -->
-            <section class="main-weather panel">
-
-                <div class="weather-left">
-
-                    <div class="location-tag">
-                        <span>📍</span>
-                        <span id="city-name">Delhi, IN</span>
-                    </div>
-
-                    <p class="weather-date" id="weather-date">
-                        Current weather
-                    </p>
-
-                    <div class="temperature-display">
-                        <h2 id="temperature">--°</h2>
-
-                        <img
-                            id="weather-icon"
-                            src=""
-                            alt="Weather condition"
-                        >
-                    </div>
-
-                    <h3 id="weather-description">Clear Sky</h3>
-
-                    <p class="feels-text">
-                        Feels like <strong id="feels-like">--°C</strong>
-                    </p>
-
-                    <div class="weather-divider"></div>
-
-                    <div class="sun-times">
-
-                        <div>
-                            <span>🌅</span>
-                            <div>
-                                <small>SUNRISE</small>
-                                <strong id="sunrise">--:--</strong>
-                            </div>
-                        </div>
-
-                        <div>
-                            <span>🌇</span>
-                            <div>
-                                <small>SUNSET</small>
-                                <strong id="sunset">--:--</strong>
-                            </div>
-                        </div>
-
-                    </div>
-
-                </div>
-
-                <div class="weather-right">
-
-                    <div class="weather-art">
-                        <div class="art-glow"></div>
-                        <div class="art-sun">☀</div>
-                        <div class="art-cloud">☁</div>
-                    </div>
-
-                    <div class="weather-extra">
-                        <p>WEATHER CONDITION</p>
-                        <h3 id="condition-title">Clear</h3>
-                        <span id="weather-country">Global weather data</span>
-                    </div>
-
-                </div>
-
-            </section>
-
-            <!-- WEATHER METRICS -->
-            <section class="section-area">
-
-                <div class="section-title">
-                    <div>
-                        <span class="section-label">LIVE TELEMETRY</span>
-                        <h2>Atmospheric Conditions</h2>
-                    </div>
-
-                    <span class="live-badge">
-                        ● LIVE DATA
-                    </span>
-                </div>
-
-                <div class="metrics-grid">
-
-                    <div class="metric-card">
-                        <div class="metric-top">
-                            <span>💧</span>
-                            <small>01</small>
-                        </div>
-                        <p>Humidity</p>
-                        <h3 id="humidity">--%</h3>
-                        <small>Air moisture</small>
-                    </div>
-
-                    <div class="metric-card">
-                        <div class="metric-top">
-                            <span>🌬️</span>
-                            <small>02</small>
-                        </div>
-                        <p>Wind Speed</p>
-                        <h3 id="wind">-- m/s</h3>
-                        <small>Wind velocity</small>
-                    </div>
-
-                    <div class="metric-card">
-                        <div class="metric-top">
-                            <span>◉</span>
-                            <small>03</small>
-                        </div>
-                        <p>Visibility</p>
-                        <h3 id="visibility">-- km</h3>
-                        <small>Atmospheric clarity</small>
-                    </div>
-
-                    <div class="metric-card">
-                        <div class="metric-top">
-                            <span>◷</span>
-                            <small>04</small>
-                        </div>
-                        <p>Pressure</p>
-                        <h3 id="pressure">-- hPa</h3>
-                        <small>Air pressure</small>
-                    </div>
-
-                </div>
-
-            </section>
-
-            <!-- FORECAST -->
-            <section class="section-area">
-
-                <div class="section-title">
-                    <div>
-                        <span class="section-label">PREDICTIVE ANALYTICS</span>
-                        <h2>5-Day Forecast</h2>
-                    </div>
-
-                    <span class="forecast-label">NEXT 5 DAYS</span>
-                </div>
-
-                <div class="forecast-grid" id="forecast-grid">
-                </div>
-
-            </section>
-
-            <!-- FOOTER DATA -->
-            <div class="update-info">
-                <span class="live-dot"></span>
-                <span id="update-time">Weather data synchronized</span>
-
-                <button id="refresh-btn">↻ Refresh</button>
+            <div>
+                <strong>100%</strong>
+                <small>Easy Shopping</small>
             </div>
 
         </div>
 
-        <!-- EMPTY STATE -->
-        <section id="empty-state" class="empty-state">
+    </div>
 
-            <div class="empty-icon">🌌</div>
-
-            <h2>Explore the atmosphere.</h2>
-
-            <p>
-                Search any city to unlock real-time atmospheric
-                data and weather predictions.
-            </p>
-
-        </section>
-
-        <!-- FOOTER -->
-        <footer class="footer">
-
-            <div class="logo">
-                ☁ SkyCast<span>Pro</span>
+    <div class="hero-visual">
+        <div class="hero-circle"></div>
+        <div class="hero-emoji">🛍️</div>
+        <div class="floating-card">
+            <span>✨</span>
+            <div>
+                <strong>Great Deals</strong>
+                <small>Just for you</small>
             </div>
+        </div>
+    </div>
 
-            <p>Intelligent weather. Better decisions.</p>
+</section>
 
-            <small>
-                Powered by OpenWeatherMap API |
-                © <span id="year"></span> SkyCast Pro
-            </small>
 
-        </footer>
+<!-- FEATURES -->
 
-    </main>
+<section class="features" id="features">
 
-    <script src="script.js"></script>
+    <div class="feature">
+        <span>🚚</span>
+        <div>
+            <strong>Fast Delivery</strong>
+            <small>Quick order processing</small>
+        </div>
+    </div>
+
+    <div class="feature">
+        <span>🔒</span>
+        <div>
+            <strong>Secure Shopping</strong>
+            <small>Safe checkout experience</small>
+        </div>
+    </div>
+
+    <div class="feature">
+        <span>💎</span>
+        <div>
+            <strong>Quality Products</strong>
+            <small>Carefully selected items</small>
+        </div>
+    </div>
+
+    <div class="feature">
+        <span>💬</span>
+        <div>
+            <strong>Customer Support</strong>
+            <small>We're here to help</small>
+        </div>
+    </div>
+
+</section>
+
+
+<!-- PRODUCTS SECTION -->
+
+<main class="products-section" id="products">
+
+    <div class="section-heading">
+
+        <div>
+            <span class="section-tag">OUR COLLECTION</span>
+            <h2>Explore Products</h2>
+            <p>Find something you'll love.</p>
+        </div>
+
+        <div class="search-box">
+            <span>🔍</span>
+            <input
+                type="text"
+                id="search-input"
+                placeholder="Search products..."
+            >
+        </div>
+
+    </div>
+
+
+    <!-- CATEGORY FILTER -->
+
+    <div class="filter-bar" id="category-filters">
+
+        <button class="filter-btn active" data-category="all">
+            All Products
+        </button>
+
+        <button class="filter-btn" data-category="electronics">
+            Electronics
+        </button>
+
+        <button class="filter-btn" data-category="jewelery">
+            Jewelry
+        </button>
+
+        <button class="filter-btn" data-category="men's clothing">
+            Men's Fashion
+        </button>
+
+        <button class="filter-btn" data-category="women's clothing">
+            Women's Fashion
+        </button>
+
+    </div>
+
+
+    <!-- PRODUCT STATUS -->
+
+    <div class="product-status">
+
+        <span id="product-count">Loading products...</span>
+
+        <select id="sort-products">
+            <option value="default">Sort: Featured</option>
+            <option value="low">Price: Low to High</option>
+            <option value="high">Price: High to Low</option>
+            <option value="rating">Top Rated</option>
+        </select>
+
+    </div>
+
+
+    <!-- LOADING -->
+
+    <div class="loader" id="loader">
+        <div class="spinner"></div>
+        <p>Discovering amazing products...</p>
+    </div>
+
+
+    <!-- ERROR -->
+
+    <div class="error-message" id="error-message" hidden>
+
+        <span>⚠️</span>
+        <h3>Unable to load products</h3>
+        <p>Please check your internet connection and try again.</p>
+
+        <button id="retry-btn" class="primary-btn">
+            Try Again
+        </button>
+
+    </div>
+
+
+    <!-- PRODUCT GRID -->
+
+    <div class="product-grid" id="product-grid"></div>
+
+</main>
+
+
+<!-- NEWSLETTER -->
+
+<section class="newsletter">
+
+    <div>
+        <span class="section-tag">STAY UPDATED</span>
+        <h2>Shopping made smarter.</h2>
+        <p>Explore new products and discover your next favourite item.</p>
+    </div>
+
+    <a href="#products" class="newsletter-btn">
+        Shop Now →
+    </a>
+
+</section>
+
+
+<!-- FOOTER -->
+
+<footer class="footer">
+
+    <a href="#" class="logo footer-logo">
+        <span class="logo-icon">S</span>
+        ShopSphere<span class="logo-dot">.</span>
+    </a>
+
+    <p>Discover more. Shop smarter. Live better.</p>
+
+    <small>
+        © <span id="year"></span> ShopSphere. All rights reserved.
+    </small>
+
+</footer>
+
+
+<!-- CART OVERLAY -->
+
+<div class="cart-overlay" id="cart-overlay"></div>
+
+
+<!-- CART DRAWER -->
+
+<aside class="cart-drawer" id="cart-drawer">
+
+    <div class="cart-header">
+
+        <div>
+            <h2>Your Shopping Cart</h2>
+            <p id="cart-items-label">0 items</p>
+        </div>
+
+        <button class="close-cart" id="close-cart">
+            ✕
+        </button>
+
+    </div>
+
+
+    <!-- CART ITEMS -->
+
+    <div class="cart-items" id="cart-items">
+
+        <div class="empty-cart">
+            <span>🛒</span>
+            <h3>Your cart is empty</h3>
+            <p>Add some products to get started.</p>
+        </div>
+
+    </div>
+
+
+    <!-- CART TOTAL -->
+
+    <div class="cart-footer">
+
+        <div class="bill-row">
+            <span>Subtotal</span>
+            <strong id="subtotal">$0.00</strong>
+        </div>
+
+        <div class="bill-row">
+            <span>Tax (5%)</span>
+            <strong id="tax">$0.00</strong>
+        </div>
+
+        <div class="bill-row">
+            <span>Shipping</span>
+            <strong id="shipping">$0.00</strong>
+        </div>
+
+        <div class="bill-row total-row">
+            <span>Total</span>
+            <strong id="total">$0.00</strong>
+        </div>
+
+        <button class="checkout-btn" id="checkout-btn">
+            Proceed to Checkout →
+        </button>
+
+        <p class="secure-note">
+            🔒 Secure demo checkout
+        </p>
+
+    </div>
+
+</aside>
+
+
+<!-- CHECKOUT MODAL -->
+
+<div class="modal-overlay" id="checkout-modal">
+
+    <div class="checkout-modal">
+
+        <button class="close-modal" id="close-modal">✕</button>
+
+        <div class="success-icon">✓</div>
+
+        <h2>Order Confirmed!</h2>
+
+        <p>
+            Your demo order has been placed successfully.
+        </p>
+
+        <div class="order-details">
+
+            <span>Order ID</span>
+            <strong id="order-id">SS-000000</strong>
+
+            <span>Order Total</span>
+            <strong id="order-total">$0.00</strong>
+
+        </div>
+
+        <button class="primary-btn" id="continue-shopping">
+            Continue Shopping
+        </button>
+
+    </div>
+
+</div>
+
+
+<script src="script.js"></script>
 
 </body>
 </html>
