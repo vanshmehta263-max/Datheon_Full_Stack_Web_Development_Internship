@@ -1,604 +1,670 @@
 
-// ========================================
-// TASK MANAGER - TASKFLOW
-// CRUD + LOCAL STORAGE
-// ========================================
+/* ==========================================
+   SKYCAST PRO
+   REAL WEATHER USING OPEN-METEO
+   NO API KEY REQUIRED
+========================================== */
 
-// Get HTML elements
+// 1. API URLS
 
-const taskForm = document.getElementById("task-form");
-const taskTitle = document.getElementById("task-title");
-const taskCategory = document.getElementById("task-category");
-const taskDate = document.getElementById("task-date");
-const taskList = document.getElementById("task-list");
-
-const submitBtn = document.getElementById("submit-btn");
-const cancelEditBtn = document.getElementById("cancel-edit");
-const formHeading = document.getElementById("form-heading");
-
-const searchInput = document.getElementById("search-input");
-const categoryFilter = document.getElementById("category-filter");
-
-const totalCount = document.getElementById("total-count");
-const activeCount = document.getElementById("active-count");
-const completedCount = document.getElementById("completed-count");
-const progressCount = document.getElementById("progress-count");
-
-const progressFill = document.getElementById("progress-fill");
-const progressText = document.getElementById("progress-text");
-const remainingText = document.getElementById("remaining-text");
-const visibleCount = document.getElementById("visible-count");
-
-const themeButton = document.getElementById("theme-toggle");
+const GEO_URL = "https://geocoding-api.open-meteo.com/v1/search";
+const WEATHER_URL = "https://api.open-meteo.com/v1/forecast";
 
 
-// ========================================
-// APPLICATION DATA
-// ========================================
+// 2. HTML ELEMENTS
 
-// Load previously saved tasks
+const searchForm = document.getElementById("search-form");
+const cityInput = document.getElementById("city-input");
+const searchButton = document.getElementById("search-btn");
 
-function loadFromLocalStorage() {
-    try {
-        const savedTasks = localStorage.getItem("taskflow-tasks");
-        const parsedTasks = savedTasks ? JSON.parse(savedTasks) : [];
+const dashboard = document.getElementById("weather-dashboard");
+const emptyState = document.getElementById("empty-state");
 
-        return Array.isArray(parsedTasks) ? parsedTasks : [];
-    } catch (error) {
-        console.error("Could not load tasks:", error);
-        return [];
-    }
+const loading = document.getElementById("loading");
+const errorBox = document.getElementById("error-box");
+const errorText = document.getElementById("error-text");
+
+const locationButton = document.getElementById("location-btn");
+const refreshButton = document.getElementById("refresh-btn");
+
+let lastLocation = null;
+
+
+// 3. SYSTEM CLOCK
+
+function updateClock() {
+
+    const now = new Date();
+
+    document.getElementById("clock").textContent =
+        now.toLocaleTimeString("en-IN");
+
+    document.getElementById("today-date").textContent =
+        now.toLocaleDateString("en-IN", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric"
+        });
+
 }
 
-let tasks = loadFromLocalStorage();
-
-let currentFilter = "All";
-let editingTaskId = null;
+updateClock();
+setInterval(updateClock, 1000);
 
 
-// ========================================
-// SAVE DATA
-// ========================================
+// 4. FOOTER YEAR
 
-function saveToLocalStorage() {
-    try {
-        localStorage.setItem("taskflow-tasks", JSON.stringify(tasks));
-    } catch (error) {
-        alert("Unable to save tasks in browser storage.");
-        console.error(error);
-    }
+document.getElementById("year").textContent =
+    new Date().getFullYear();
+
+
+// 5. WEATHER CODE CONVERSION
+
+function getWeatherInfo(code, isDay = 1) {
+
+    const conditions = {
+
+        0: ["Clear sky", isDay ? "01d" : "01n", "☀️"],
+        1: ["Mainly clear", isDay ? "01d" : "01n", "🌤️"],
+        2: ["Partly cloudy", isDay ? "02d" : "02n", "⛅"],
+        3: ["Overcast", isDay ? "04d" : "04n", "☁️"],
+
+        45: ["Fog", "50d", "🌫️"],
+        48: ["Depositing rime fog", "50d", "🌫️"],
+
+        51: ["Light drizzle", "09d", "🌦️"],
+        53: ["Moderate drizzle", "09d", "🌦️"],
+        55: ["Dense drizzle", "09d", "🌧️"],
+
+        56: ["Freezing drizzle", "09d", "🌧️"],
+        57: ["Heavy freezing drizzle", "09d", "🌧️"],
+
+        61: ["Slight rain", "10d", "🌧️"],
+        63: ["Moderate rain", "10d", "🌧️"],
+        65: ["Heavy rain", "10d", "🌧️"],
+
+        66: ["Freezing rain", "13d", "🌨️"],
+        67: ["Heavy freezing rain", "13d", "🌨️"],
+
+        71: ["Slight snowfall", "13d", "🌨️"],
+        73: ["Moderate snowfall", "13d", "❄️"],
+        75: ["Heavy snowfall", "13d", "❄️"],
+        77: ["Snow grains", "13d", "❄️"],
+
+        80: ["Rain showers", "09d", "🌦️"],
+        81: ["Moderate rain showers", "09d", "🌧️"],
+        82: ["Violent rain showers", "09d", "⛈️"],
+
+        85: ["Snow showers", "13d", "🌨️"],
+        86: ["Heavy snow showers", "13d", "❄️"],
+
+        95: ["Thunderstorm", "11d", "⛈️"],
+        96: ["Thunderstorm with hail", "11d", "⛈️"],
+        99: ["Heavy thunderstorm", "11d", "⛈️"]
+
+    };
+
+    return conditions[code] ||
+        ["Unknown weather", "03d", "🌤️"];
+
 }
 
 
-// ========================================
-// GENERATE UNIQUE ID
-// ========================================
+// 6. SEARCH CITY
 
-function generateId() {
-    if (window.crypto && window.crypto.randomUUID) {
-        return window.crypto.randomUUID();
-    }
-
-    return Date.now().toString() + Math.random().toString(16).slice(2);
-}
-
-
-// ========================================
-// CREATE TASK
-// ========================================
-
-taskForm.addEventListener("submit", function (event) {
+searchForm.addEventListener("submit", async function(event) {
 
     event.preventDefault();
 
-    const title = taskTitle.value.trim();
+    const city = cityInput.value.trim();
 
-    if (!title) {
-        alert("Please enter a task name.");
+    if (!city) {
+        showError("Please enter a city name.");
         return;
     }
 
-    // UPDATE EXISTING TASK
+    await searchCity(city);
 
-    if (editingTaskId !== null) {
+});
 
-        const task = tasks.find(
-            item => item.id === editingTaskId
-        );
 
-        if (task) {
-            task.title = title;
-            task.category = taskCategory.value;
-            task.date = taskDate.value;
+// 7. GEOCODING API
+
+async function searchCity(city) {
+
+    showLoading(true);
+
+    try {
+
+        const url =
+            `${GEO_URL}?name=${encodeURIComponent(city)}&count=1&language=en&format=json`;
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error("Unable to connect to location service.");
         }
 
-        editingTaskId = null;
+        const data = await response.json();
 
-        submitBtn.textContent = "+ Add Task";
-        formHeading.textContent = "Add New Task";
-        cancelEditBtn.hidden = true;
+        if (!data.results || data.results.length === 0) {
+            throw new Error("City not found. Try another city name.");
+        }
+
+        const place = data.results[0];
+
+        const location = {
+            name: place.name,
+            country: place.country || "",
+            latitude: place.latitude,
+            longitude: place.longitude
+        };
+
+        await loadWeather(location);
 
     }
 
-    // CREATE NEW TASK
+    catch(error) {
+
+        showError(error.message);
+
+    }
+
+    finally {
+
+        showLoading(false);
+
+    }
+
+}
+
+
+// 8. FETCH REAL WEATHER
+
+async function loadWeather(location) {
+
+    const params = new URLSearchParams({
+
+        latitude: location.latitude,
+        longitude: location.longitude,
+
+        current: [
+            "temperature_2m",
+            "relative_humidity_2m",
+            "apparent_temperature",
+            "is_day",
+            "weather_code",
+            "wind_speed_10m",
+            "wind_direction_10m",
+            "surface_pressure",
+            "visibility"
+        ].join(","),
+
+        daily: [
+            "weather_code",
+            "temperature_2m_max",
+            "temperature_2m_min",
+            "sunrise",
+            "sunset"
+        ].join(","),
+
+        forecast_days: "5",
+        timezone: "auto",
+        wind_speed_unit: "ms"
+
+    });
+
+    const response = await fetch(
+        `${WEATHER_URL}?${params.toString()}`
+    );
+
+    if (!response.ok) {
+        throw new Error("Weather service is temporarily unavailable.");
+    }
+
+    const data = await response.json();
+
+    if (!data.current || !data.daily) {
+        throw new Error("Weather information is unavailable for this location.");
+    }
+
+    lastLocation = location;
+
+    displayCurrentWeather(data, location);
+
+    displayForecast(data);
+
+    updateWeatherArt(
+        data.current.weather_code,
+        data.current.is_day
+    );
+
+    dashboard.hidden = false;
+    emptyState.hidden = true;
+    errorBox.hidden = true;
+
+    document.getElementById("update-time").textContent =
+        "Last synchronized: " +
+        new Date().toLocaleTimeString();
+
+}
+
+
+// 9. DISPLAY CURRENT WEATHER
+
+function displayCurrentWeather(data, location) {
+
+    const current = data.current;
+
+    const temp = Math.round(current.temperature_2m);
+
+    const feels = Math.round(current.apparent_temperature);
+
+    const weather = getWeatherInfo(
+        current.weather_code,
+        current.is_day
+    );
+
+    // Location
+
+    document.getElementById("city-name").textContent =
+        `${location.name}, ${location.country}`;
+
+    document.getElementById("weather-country").textContent =
+        `${location.name} • ${location.country}`;
+
+    // Date
+
+    const today = data.daily.time[0];
+
+    const date = new Date(today + "T12:00:00");
+
+    document.getElementById("weather-date").textContent =
+        date.toLocaleDateString("en-IN", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric"
+        });
+
+    // Temperature
+
+    document.getElementById("temperature").textContent =
+        `${temp}°`;
+
+    document.getElementById("feels-like").textContent =
+        `${feels}°C`;
+
+    // Weather description
+
+    document.getElementById("weather-description").textContent =
+        weather[0];
+
+    document.getElementById("condition-title").textContent =
+        weather[0];
+
+    // Weather icon
+
+    const weatherIcon = document.getElementById("weather-icon");
+
+    weatherIcon.src =
+        `https://openweathermap.org/img/wn/${weather[1]}@2x.png`;
+
+    weatherIcon.alt = weather[0];
+
+    weatherIcon.style.display = "block";
+
+    // Humidity
+
+    document.getElementById("humidity").textContent =
+        `${current.relative_humidity_2m}%`;
+
+    // Wind speed
+
+    document.getElementById("wind").textContent =
+        `${current.wind_speed_10m} m/s`;
+
+    // Visibility
+
+    document.getElementById("visibility").textContent =
+        `${(current.visibility / 1000).toFixed(1)} km`;
+
+    // Pressure
+
+    document.getElementById("pressure").textContent =
+        `${Math.round(current.surface_pressure)} hPa`;
+
+    // Sunrise and sunset
+
+    document.getElementById("sunrise").textContent =
+        formatTime(data.daily.sunrise[0]);
+
+    document.getElementById("sunset").textContent =
+        formatTime(data.daily.sunset[0]);
+
+}
+
+
+// 10. FORMAT TIME
+
+function formatTime(dateTime) {
+
+    if (!dateTime) return "--:--";
+
+    return dateTime.split("T")[1].slice(0, 5);
+
+}
+
+
+// 11. FIVE-DAY FORECAST
+
+function displayForecast(data) {
+
+    const grid = document.getElementById("forecast-grid");
+
+    grid.innerHTML = "";
+
+    const daily = data.daily;
+
+    daily.time.forEach((dateString, index) => {
+
+        const date = new Date(dateString + "T12:00:00");
+
+        const dayName = index === 0
+            ? "Today"
+            : date.toLocaleDateString("en-IN", {
+                weekday: "short"
+            });
+
+        const weather = getWeatherInfo(
+            daily.weather_code[index]
+        );
+
+        const maxTemp = Math.round(
+            daily.temperature_2m_max[index]
+        );
+
+        const minTemp = Math.round(
+            daily.temperature_2m_min[index]
+        );
+
+        // Forecast card
+
+        const card = document.createElement("div");
+
+        card.className = "forecast-card";
+
+        const heading = document.createElement("h3");
+
+        heading.textContent = dayName;
+
+        const image = document.createElement("img");
+
+        image.src =
+            `https://openweathermap.org/img/wn/${weather[1]}@2x.png`;
+
+        image.alt = weather[0];
+
+        const description = document.createElement("p");
+
+        description.textContent = weather[0];
+
+        const temperature = document.createElement("div");
+
+        temperature.className = "forecast-temp";
+
+        const high = document.createElement("strong");
+
+        high.textContent = `${maxTemp}°`;
+
+        const low = document.createElement("span");
+
+        low.textContent = `${minTemp}°`;
+
+        temperature.append(high, low);
+
+        card.append(
+            heading,
+            image,
+            description,
+            temperature
+        );
+
+        grid.appendChild(card);
+
+    });
+
+}
+
+
+// 12. DYNAMIC WEATHER ART
+
+function updateWeatherArt(code, isDay) {
+
+    const weather = getWeatherInfo(code, isDay);
+
+    const artSun = document.querySelector(".art-sun");
+
+    const artCloud = document.querySelector(".art-cloud");
+
+    const glow = document.querySelector(".art-glow");
+
+    const rainy = [51,53,55,56,57,61,63,65,66,67,80,81,82,95,96,99];
+
+    const snowy = [71,73,75,77,85,86];
+
+    if (!isDay) {
+
+        artSun.textContent = "☾";
+        artSun.style.color = "#c3d4ff";
+        artSun.style.display = "block";
+
+        artCloud.textContent = "☁";
+
+    }
+
+    else if (rainy.includes(code)) {
+
+        artSun.style.display = "none";
+
+        artCloud.textContent = "🌧️";
+
+    }
+
+    else if (snowy.includes(code)) {
+
+        artSun.style.display = "none";
+
+        artCloud.textContent = "❄️";
+
+    }
+
+    else if (code === 0 || code === 1) {
+
+        artSun.style.display = "block";
+        artSun.textContent = "☀";
+        artSun.style.color = "#ffcc69";
+
+        artCloud.textContent = "☁";
+
+    }
 
     else {
 
-        const newTask = {
-            id: generateId(),
-            title: title,
-            category: taskCategory.value,
-            date: taskDate.value,
-            completed: false,
-            createdAt: new Date().toISOString()
-        };
+        artSun.style.display = "none";
 
-        tasks.unshift(newTask);
+        artCloud.textContent = "☁";
 
     }
 
-    saveToLocalStorage();
+    glow.style.background =
+        "radial-gradient(circle, rgba(69,217,245,.24), transparent 70%)";
 
-    taskForm.reset();
+}
 
-    renderTasks();
+
+// 13. LOADING
+
+function showLoading(active) {
+
+    loading.hidden = !active;
+
+    searchButton.disabled = active;
+
+    locationButton.disabled = active;
+
+    searchButton.innerHTML = active
+        ? "Loading..."
+        : 'Explore Weather <span>→</span>';
+
+    if (active) {
+
+        errorBox.hidden = true;
+        dashboard.hidden = true;
+        emptyState.hidden = true;
+
+    }
+
+}
+
+
+// 14. ERROR HANDLING
+
+function showError(message) {
+
+    errorText.textContent = message;
+
+    errorBox.hidden = false;
+
+    dashboard.hidden = true;
+
+    emptyState.hidden = true;
+
+}
+
+
+// 15. POPULAR CITY BUTTONS
+
+document.querySelectorAll(".city-chip").forEach(button => {
+
+    button.addEventListener("click", function() {
+
+        const city = this.dataset.city;
+
+        cityInput.value = city;
+
+        searchCity(city);
+
+    });
 
 });
 
 
-// ========================================
-// READ / DISPLAY TASKS
-// ========================================
+// 16. CURRENT LOCATION
 
-function renderTasks() {
+locationButton.addEventListener("click", function() {
 
-    taskList.innerHTML = "";
+    if (!navigator.geolocation) {
 
-    const searchText = searchInput.value.toLowerCase().trim();
+        showError("Geolocation is not supported by your browser.");
 
-    const selectedCategory = categoryFilter.value;
-
-    // Apply filters
-
-    const filteredTasks = tasks.filter(task => {
-
-        const matchesStatus =
-            currentFilter === "All" ||
-            (currentFilter === "Active" && !task.completed) ||
-            (currentFilter === "Completed" && task.completed);
-
-        const matchesCategory =
-            selectedCategory === "All" ||
-            task.category === selectedCategory;
-
-        const matchesSearch =
-            task.title.toLowerCase().includes(searchText);
-
-        return matchesStatus && matchesCategory && matchesSearch;
-
-    });
-
-    // Empty state
-
-    if (filteredTasks.length === 0) {
-
-        taskList.innerHTML = `
-            <div class="empty-state">
-                <span>📝</span>
-                <h3>No tasks found</h3>
-                <p>Try another search or add a new task.</p>
-            </div>
-        `;
+        return;
 
     }
 
-    // Create task elements
+    showLoading(true);
 
-    filteredTasks.forEach(task => {
+    navigator.geolocation.getCurrentPosition(
 
-        const taskElement = document.createElement("article");
+        async function(position) {
 
-        taskElement.className = "task-item";
+            try {
 
-        if (task.completed) {
-            taskElement.classList.add("completed");
-        }
+                const location = {
+                    name: "Your Location",
+                    country: "",
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude
+                };
 
-        // Create elements safely
+                await loadWeather(location);
 
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.className = "task-check";
-        checkbox.checked = task.completed;
-        checkbox.setAttribute(
-            "aria-label",
-            "Mark " + task.title + " as completed"
-        );
-
-        const details = document.createElement("div");
-        details.className = "task-details";
-
-        const title = document.createElement("h3");
-        title.textContent = task.title;
-
-        const description = document.createElement("p");
-        description.textContent = task.completed
-            ? "Completed"
-            : "In progress";
-
-        const meta = document.createElement("div");
-        meta.className = "task-meta";
-
-        const category = document.createElement("span");
-        category.className = "category-badge";
-        category.textContent = "📁 " + task.category;
-
-        meta.appendChild(category);
-
-        if (task.date) {
-
-            const dateBadge = document.createElement("span");
-            dateBadge.className = "date-badge";
-
-            const dueDate = new Date(task.date + "T00:00:00");
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            dateBadge.textContent = "📅 " +
-                dueDate.toLocaleDateString("en-IN");
-
-            if (!task.completed && dueDate < today) {
-                dateBadge.textContent += " • Overdue";
-                dateBadge.style.color = "#ef4444";
             }
 
-            meta.appendChild(dateBadge);
+            catch(error) {
+
+                showError(error.message);
+
+            }
+
+            finally {
+
+                showLoading(false);
+
+            }
+
+        },
+
+        function(error) {
+
+            showLoading(false);
+
+            const messages = {
+                1: "Location permission denied. Please allow location access.",
+                2: "Unable to detect your location.",
+                3: "Location request timed out. Try again."
+            };
+
+            showError(
+                messages[error.code] || "Location unavailable."
+            );
+
+        },
+
+        {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 300000
         }
 
-        details.append(title, description, meta);
-
-        // Action buttons
-
-        const actions = document.createElement("div");
-        actions.className = "task-actions";
-
-        const editButton = document.createElement("button");
-        editButton.className = "action-btn";
-        editButton.textContent = "✏️";
-        editButton.title = "Edit task";
-        editButton.setAttribute("aria-label", "Edit " + task.title);
-
-        const deleteButton = document.createElement("button");
-        deleteButton.className = "action-btn delete-btn";
-        deleteButton.textContent = "🗑️";
-        deleteButton.title = "Delete task";
-        deleteButton.setAttribute("aria-label", "Delete " + task.title);
-
-        actions.append(editButton, deleteButton);
-
-        // Attach event listeners
-
-        checkbox.addEventListener("change", () => {
-            toggleTask(task.id);
-        });
-
-        editButton.addEventListener("click", () => {
-            editTask(task.id);
-        });
-
-        deleteButton.addEventListener("click", () => {
-            deleteTask(task.id);
-        });
-
-        taskElement.append(checkbox, details, actions);
-
-        taskList.appendChild(taskElement);
-
-    });
-
-    visibleCount.textContent =
-        filteredTasks.length + " tasks";
-
-    updateStatistics();
-    updateStatusGraph();
-}
-
-
-// ========================================
-// UPDATE TASK STATUS
-// ========================================
-
-function toggleTask(id) {
-
-    const task = tasks.find(item => item.id === id);
-
-    if (!task) return;
-
-    task.completed = !task.completed;
-
-    saveToLocalStorage();
-
-    renderTasks();
-
-}
-
-
-// ========================================
-// UPDATE / EDIT TASK
-// ========================================
-
-function editTask(id) {
-
-    const task = tasks.find(item => item.id === id);
-
-    if (!task) return;
-
-    editingTaskId = id;
-
-    taskTitle.value = task.title;
-    taskCategory.value = task.category;
-    taskDate.value = task.date;
-
-    submitBtn.textContent = "Save Changes";
-    formHeading.textContent = "Edit Task";
-
-    cancelEditBtn.hidden = false;
-
-    document.querySelector(".add-panel").scrollIntoView({
-        behavior: "smooth"
-    });
-
-    taskTitle.focus();
-
-}
-
-
-// ========================================
-// CANCEL EDITING
-// ========================================
-
-cancelEditBtn.addEventListener("click", () => {
-
-    editingTaskId = null;
-
-    taskForm.reset();
-
-    submitBtn.textContent = "+ Add Task";
-    formHeading.textContent = "Add New Task";
-
-    cancelEditBtn.hidden = true;
-
-});
-
-
-// ========================================
-// DELETE TASK
-// ========================================
-
-function deleteTask(id) {
-
-    const confirmed = confirm(
-        "Are you sure you want to delete this task?"
-    );
-
-    if (!confirmed) return;
-
-    tasks = tasks.filter(item => item.id !== id);
-
-    if (editingTaskId === id) {
-        editingTaskId = null;
-        taskForm.reset();
-        submitBtn.textContent = "+ Add Task";
-        formHeading.textContent = "Add New Task";
-        cancelEditBtn.hidden = true;
-    }
-
-    saveToLocalStorage();
-
-    renderTasks();
-
-}
-
-
-// ========================================
-// FILTER TASKS
-// ========================================
-
-document.querySelectorAll(".filter-btn").forEach(button => {
-
-    button.addEventListener("click", () => {
-
-        document.querySelectorAll(".filter-btn").forEach(btn => {
-            btn.classList.remove("active");
-        });
-
-        button.classList.add("active");
-
-        currentFilter = button.dataset.filter;
-
-        renderTasks();
-
-    });
-
-});
-
-
-// ========================================
-// CATEGORY FILTER
-// ========================================
-
-categoryFilter.addEventListener("change", renderTasks);
-
-
-// ========================================
-// SEARCH TASKS
-// ========================================
-
-searchInput.addEventListener("input", renderTasks);
-
-
-// ========================================
-// CLEAR COMPLETED TASKS
-// ========================================
-
-document.getElementById("clear-completed").addEventListener("click", () => {
-
-    const hasCompleted = tasks.some(task => task.completed);
-
-    if (!hasCompleted) {
-        alert("There are no completed tasks to clear.");
-        return;
-    }
-
-    const confirmed = confirm(
-        "Delete all completed tasks?"
-    );
-
-    if (!confirmed) return;
-
-    tasks = tasks.filter(task => !task.completed);
-
-    saveToLocalStorage();
-
-    renderTasks();
-
-});
-
-
-// ========================================
-// UPDATE DASHBOARD STATISTICS
-// ========================================
-
-function updateStatistics() {
-
-
-    // ========================================
-    // UPDATE TASK STATUS GRAPH
-    // ========================================
-
-    function updateStatusGraph() {
-
-        const total = tasks.length;
-
-        const completed = tasks.filter(
-            task => task.completed
-        ).length;
-
-        const active = total - completed;
-
-        const completedPercentage = total === 0
-            ? 0
-            : Math.round((completed / total) * 100);
-
-        const activePercentage = total === 0
-            ? 0
-            : 100 - completedPercentage;
-
-        // Update center number
-
-        document.getElementById("chart-total").textContent = total;
-
-        // Update legend
-
-        document.getElementById("chart-completed").textContent =
-            completed + " tasks";
-
-        document.getElementById("chart-active").textContent =
-            active + " tasks";
-
-        document.getElementById("completed-percent").textContent =
-            completedPercentage + "%";
-
-        document.getElementById("active-percent").textContent =
-            activePercentage + "%";
-
-        // Update donut graph
-
-        const chart = document.getElementById("status-chart");
-
-        if (total === 0) {
-
-            chart.style.background =
-                "#dfe4ed";
-
-        } else {
-
-            chart.style.background = `
-            conic-gradient(
-                #16a77a 0% ${completedPercentage}%,
-                #536dfe ${completedPercentage}% 100%
-            )
-        `;
-
-        }
-
-        // Update productivity message
-
-        const message = document.getElementById("chart-message");
-
-        if (total === 0) {
-            message.textContent = "Let's get started!";
-        } else if (completed === total) {
-            message.textContent = "Excellent work! 🎉";
-        } else if (completedPercentage >= 50) {
-            message.textContent = "Great progress! 🚀";
-        } else {
-            message.textContent = "Keep going! 💪";
-        }
-
-    }
-
-
-}
-
-
-// ========================================
-// DARK / LIGHT THEME
-// ========================================
-
-const savedTheme = localStorage.getItem("taskflow-theme");
-
-if (savedTheme === "dark") {
-    document.body.classList.add("dark-mode");
-    themeButton.textContent = "☀️";
-}
-
-themeButton.addEventListener("click", () => {
-
-    document.body.classList.toggle("dark-mode");
-
-    const isDark = document.body.classList.contains("dark-mode");
-
-    themeButton.textContent = isDark ? "☀️" : "🌙";
-
-    localStorage.setItem(
-        "taskflow-theme",
-        isDark ? "dark" : "light"
     );
 
 });
 
 
-// ========================================
-// DATE AND COPYRIGHT
-// ========================================
+// 17. REFRESH WEATHER
 
-const today = new Date();
+refreshButton.addEventListener("click", async function() {
 
-document.getElementById("today-label").textContent =
-    today.toLocaleDateString("en-IN", {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-        year: "numeric"
-    });
+    if (!lastLocation) return;
 
-document.getElementById("year").textContent =
-    today.getFullYear();
+    showLoading(true);
+
+    try {
+
+        await loadWeather(lastLocation);
+
+    }
+
+    catch(error) {
+
+        showError(error.message);
+
+    }
+
+    finally {
+
+        showLoading(false);
+
+    }
+
+});
 
 
-// ========================================
-// INITIALIZE APPLICATION
-// ========================================
+// 18. INITIAL SCREEN
 
-renderTasks();
+dashboard.hidden = true;
+errorBox.hidden = true;
+loading.hidden = true;
+emptyState.hidden = false;

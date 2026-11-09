@@ -1,260 +1,298 @@
+
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Dynamic Task Manager and Productivity Tracker">
-    <title>TaskFlow Pro | Smart Productivity Dashboard</title>
+
+    <title>SkyCast Pro | Weather Intelligence</title>
+
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-    <!-- HEADER -->
-    <header class="header">
-        <div class="container navbar">
-            <a href="#" class="logo">Task<span>Flow</span> ✦</a>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
 
-            <div class="header-right">
-                <span class="today-label" id="today-label"></span>
-                <button id="theme-toggle" class="theme-btn" aria-label="Toggle theme">🌙</button>
-            </div>
+    <!-- NAVBAR -->
+    <header class="navbar">
+        <a href="#" class="logo">
+            <span class="logo-icon">☁</span>
+            SkyCast<span>Pro</span>
+        </a>
+
+        <div class="nav-right">
+            <span class="live-status">
+                <span class="live-dot"></span>
+                LIVE SYSTEM
+            </span>
+
+            <button class="location-button" id="location-btn">
+                ◎ My Location
+            </button>
         </div>
     </header>
 
-    <main class="container">
+    <main class="main-container">
 
-        <!-- WELCOME SECTION -->
-        <section class="welcome">
+        <!-- INTRO -->
+        <section class="intro">
             <div>
-                <p class="eyebrow">YOUR PERSONAL PRODUCTIVITY SPACE</p>
-                <h1>Manage your <span>tasks.</span></h1>
-                <p class="subtitle">
-                    Stay organized, focus on your goals and get things done.
+                <p class="section-label">WEATHER INTELLIGENCE PLATFORM</p>
+                <h1>Weather beyond <span>expectations.</span></h1>
+                <p class="intro-description">
+                    Real-time climate insights, atmospheric conditions
+                    and global weather forecasts.
                 </p>
             </div>
-        </section>
 
-        <!-- TASK ANALYTICS GRAPH -->
-        <section class="panel analytics-panel">
-
-            <div class="task-heading">
-                <div>
-                    <p class="eyebrow">PRODUCTIVITY OVERVIEW</p>
-                    <h2>Task Status Analytics</h2>
-                </div>
-                <span class="heading-icon">📊</span>
-            </div>
-
-            <div class="analytics-layout">
-
-                <!-- DONUT GRAPH -->
-                <div class="chart-container">
-                    <div class="donut-chart" id="status-chart">
-                        <div class="chart-center">
-                            <h2 id="chart-total">0</h2>
-                            <p>Total Tasks</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- GRAPH LEGEND -->
-                <div class="chart-details">
-
-                    <div class="chart-info">
-                        <span class="legend-dot completed-dot"></span>
-                        <div>
-                            <h3>Completed Tasks</h3>
-                            <p id="chart-completed">0 tasks</p>
-                        </div>
-                        <strong id="completed-percent">0%</strong>
-                    </div>
-
-                    <div class="chart-info">
-                        <span class="legend-dot active-dot"></span>
-                        <div>
-                            <h3>Active Tasks</h3>
-                            <p id="chart-active">0 tasks</p>
-                        </div>
-                        <strong id="active-percent">0%</strong>
-                    </div>
-
-                    <div class="chart-summary">
-                        <span>🏆</span>
-                        <div>
-                            <h3 id="chart-message">Let's get started!</h3>
-                            <p>Your productivity statistics update automatically.</p>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
-        </section>
-        <!-- END TASK ANALYTICS -->
-
-
-        <!-- STATISTICS -->
-        <section class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon blue">📋</div>
-                <p>Total Tasks</p>
-                <h2 id="total-count">0</h2>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon orange">⏳</div>
-                <p>Active Tasks</p>
-                <h2 id="active-count">0</h2>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon green">✅</div>
-                <p>Completed</p>
-                <h2 id="completed-count">0</h2>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon purple">📈</div>
-                <p>Progress</p>
-                <h2 id="progress-count">0%</h2>
+            <div class="system-time">
+                <span>LOCAL SYSTEM TIME</span>
+                <h2 id="clock">--:--:--</h2>
+                <p id="today-date">Loading date...</p>
             </div>
         </section>
 
-        <!-- PROGRESS BAR -->
-        <section class="progress-section">
-            <div class="progress-heading">
-                <h3>Today's Progress</h3>
-                <span id="progress-text">0 of 0 tasks completed</span>
-            </div>
+        <!-- SEARCH -->
+        <section class="search-area">
 
-            <div class="progress-track">
-                <div class="progress-fill" id="progress-fill"></div>
-            </div>
-        </section>
+            <form id="search-form" class="search-box">
 
-        <!-- ADD TASK FORM -->
-        <section class="panel add-panel">
-            <div class="panel-heading">
-                <div>
-                    <p class="eyebrow">GET THINGS DONE</p>
-                    <h2 id="form-heading">Add New Task</h2>
-                </div>
-                <span class="heading-icon">✍️</span>
-            </div>
+                <span class="search-symbol">⌕</span>
 
-            <form id="task-form">
+                <input
+                    type="text"
+                    id="city-input"
+                    placeholder="Search city, country..."
+                    autocomplete="off"
+                    required
+                >
 
-                <div class="form-group">
-                    <label for="task-title">Task Name *</label>
-                    <input type="text" id="task-title" placeholder="What do you need to do?" maxlength="100" required>
-                </div>
-
-                <div class="form-row">
-
-                    <div class="form-group">
-                        <label for="task-category">Category</label>
-                        <select id="task-category">
-                            <option value="Work">💼 Work</option>
-                            <option value="Personal">🏠 Personal</option>
-                            <option value="Study">📚 Study</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="task-date">Due Date</label>
-                        <input type="date" id="task-date">
-                    </div>
-
-                </div>
-
-                <div class="form-actions">
-                    <button type="submit" class="btn primary-btn" id="submit-btn">
-                        + Add Task
-                    </button>
-
-                    <button type="button" class="btn cancel-btn" id="cancel-edit" hidden>
-                        Cancel Edit
-                    </button>
-                </div>
+                <button type="submit" id="search-btn">
+                    Explore Weather
+                    <span>→</span>
+                </button>
 
             </form>
+
+            <div class="quick-cities">
+                <span>POPULAR:</span>
+                <button class="city-chip" data-city="Delhi">Delhi</button>
+                <button class="city-chip" data-city="Mumbai">Mumbai</button>
+                <button class="city-chip" data-city="London">London</button>
+                <button class="city-chip" data-city="Dubai">Dubai</button>
+            </div>
+
         </section>
 
-        <!-- TASK LIST -->
-        <section class="panel task-panel">
+        <!-- LOADING -->
+        <div id="loading" class="loading" hidden>
+            <div class="loader"></div>
+            <p>Connecting to weather satellites...</p>
+        </div>
 
-            <div class="task-heading">
-                <div>
-                    <p class="eyebrow">YOUR WORKSPACE</p>
-                    <h2>My Tasks</h2>
+        <!-- ERROR -->
+        <div id="error-box" class="error-box" hidden>
+            <span>⚠</span>
+            <p id="error-text">Unable to fetch weather.</p>
+        </div>
+
+        <!-- WEATHER DASHBOARD -->
+        <div id="weather-dashboard" hidden>
+
+            <!-- MAIN WEATHER -->
+            <section class="main-weather panel">
+
+                <div class="weather-left">
+
+                    <div class="location-tag">
+                        <span>📍</span>
+                        <span id="city-name">Delhi, IN</span>
+                    </div>
+
+                    <p class="weather-date" id="weather-date">
+                        Current weather
+                    </p>
+
+                    <div class="temperature-display">
+                        <h2 id="temperature">--°</h2>
+
+                        <img
+                            id="weather-icon"
+                            src=""
+                            alt="Weather condition"
+                        >
+                    </div>
+
+                    <h3 id="weather-description">Clear Sky</h3>
+
+                    <p class="feels-text">
+                        Feels like <strong id="feels-like">--°C</strong>
+                    </p>
+
+                    <div class="weather-divider"></div>
+
+                    <div class="sun-times">
+
+                        <div>
+                            <span>🌅</span>
+                            <div>
+                                <small>SUNRISE</small>
+                                <strong id="sunrise">--:--</strong>
+                            </div>
+                        </div>
+
+                        <div>
+                            <span>🌇</span>
+                            <div>
+                                <small>SUNSET</small>
+                                <strong id="sunset">--:--</strong>
+                            </div>
+                        </div>
+
+                    </div>
+
                 </div>
 
-                <span class="task-counter" id="visible-count">0 tasks</span>
-            </div>
+                <div class="weather-right">
 
-            <!-- SEARCH -->
-            <div class="search-box">
-                <span>🔍</span>
-                <input type="search" id="search-input" placeholder="Search your tasks...">
-            </div>
+                    <div class="weather-art">
+                        <div class="art-glow"></div>
+                        <div class="art-sun">☀</div>
+                        <div class="art-cloud">☁</div>
+                    </div>
 
-            <!-- FILTER BUTTONS -->
-            <div class="filter-row">
-                <div class="filters" id="status-filters">
-                    <button class="filter-btn active" data-filter="All">
-                        All
-                    </button>
+                    <div class="weather-extra">
+                        <p>WEATHER CONDITION</p>
+                        <h3 id="condition-title">Clear</h3>
+                        <span id="weather-country">Global weather data</span>
+                    </div>
 
-                    <button class="filter-btn" data-filter="Active">
-                        Active
-                    </button>
-
-                    <button class="filter-btn" data-filter="Completed">
-                        Completed
-                    </button>
                 </div>
 
-                <select id="category-filter" class="category-filter" aria-label="Filter by category">
-                    <option value="All">All Categories</option>
-                    <option value="Work">Work</option>
-                    <option value="Personal">Personal</option>
-                    <option value="Study">Study</option>
-                </select>
-            </div>
+            </section>
 
-            <!-- TASKS WILL APPEAR HERE -->
-            <div class="task-list" id="task-list">
+            <!-- WEATHER METRICS -->
+            <section class="section-area">
 
-                <div class="empty-state">
-                    <span>📝</span>
-                    <h3>No tasks yet</h3>
-                    <p>Add your first task to get started!</p>
+                <div class="section-title">
+                    <div>
+                        <span class="section-label">LIVE TELEMETRY</span>
+                        <h2>Atmospheric Conditions</h2>
+                    </div>
+
+                    <span class="live-badge">
+                        ● LIVE DATA
+                    </span>
                 </div>
 
+                <div class="metrics-grid">
+
+                    <div class="metric-card">
+                        <div class="metric-top">
+                            <span>💧</span>
+                            <small>01</small>
+                        </div>
+                        <p>Humidity</p>
+                        <h3 id="humidity">--%</h3>
+                        <small>Air moisture</small>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-top">
+                            <span>🌬️</span>
+                            <small>02</small>
+                        </div>
+                        <p>Wind Speed</p>
+                        <h3 id="wind">-- m/s</h3>
+                        <small>Wind velocity</small>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-top">
+                            <span>◉</span>
+                            <small>03</small>
+                        </div>
+                        <p>Visibility</p>
+                        <h3 id="visibility">-- km</h3>
+                        <small>Atmospheric clarity</small>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-top">
+                            <span>◷</span>
+                            <small>04</small>
+                        </div>
+                        <p>Pressure</p>
+                        <h3 id="pressure">-- hPa</h3>
+                        <small>Air pressure</small>
+                    </div>
+
+                </div>
+
+            </section>
+
+            <!-- FORECAST -->
+            <section class="section-area">
+
+                <div class="section-title">
+                    <div>
+                        <span class="section-label">PREDICTIVE ANALYTICS</span>
+                        <h2>5-Day Forecast</h2>
+                    </div>
+
+                    <span class="forecast-label">NEXT 5 DAYS</span>
+                </div>
+
+                <div class="forecast-grid" id="forecast-grid">
+                </div>
+
+            </section>
+
+            <!-- FOOTER DATA -->
+            <div class="update-info">
+                <span class="live-dot"></span>
+                <span id="update-time">Weather data synchronized</span>
+
+                <button id="refresh-btn">↻ Refresh</button>
             </div>
 
-            <div class="list-footer">
-                <span id="remaining-text">0 tasks remaining</span>
-                <button id="clear-completed" class="clear-btn">
-                    Clear Completed
-                </button>
-            </div>
+        </div>
+
+        <!-- EMPTY STATE -->
+        <section id="empty-state" class="empty-state">
+
+            <div class="empty-icon">🌌</div>
+
+            <h2>Explore the atmosphere.</h2>
+
+            <p>
+                Search any city to unlock real-time atmospheric
+                data and weather predictions.
+            </p>
 
         </section>
 
         <!-- FOOTER -->
         <footer class="footer">
-            <p>Made with ❤️ using HTML, CSS & JavaScript</p>
-            <p>TaskFlow © <span id="year"></span></p>
+
+            <div class="logo">
+                ☁ SkyCast<span>Pro</span>
+            </div>
+
+            <p>Intelligent weather. Better decisions.</p>
+
+            <small>
+                Powered by OpenWeatherMap API |
+                © <span id="year"></span> SkyCast Pro
+            </small>
+
         </footer>
 
     </main>
 
-    <!-- EDITING IS DONE IN THE SAME FORM -->
-
     <script src="script.js"></script>
-</body>
 
+</body>
 </html>
